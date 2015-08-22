@@ -26,7 +26,7 @@
 		422AD34A1B6830C6007E485C /* TMSMobileAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 422AD3491B6830C6007E485C /* TMSMobileAppDelegate.swift */; };
 		422AD34C1B68438F007E485C /* DocumentBrowser.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 422AD34B1B68438F007E485C /* DocumentBrowser.storyboard */; };
 		422AD34E1B6A9AEA007E485C /* DocumentCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 422AD34D1B6A9AEA007E485C /* DocumentCollectionViewCell.swift */; };
-		42D8EA121B741FF000FB347E /* Selection.png in Resources */ = {isa = PBXBuildFile; fileRef = 42D8EA111B741FF000FB347E /* Selection.png */; };
+		4274FB271B7B2069004E5908 /* Selection.png in Resources */ = {isa = PBXBuildFile; fileRef = 4274FB261B7B2069004E5908 /* Selection.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +47,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		42155B161B814D8B006A894D /* ReadMe.markdown */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ReadMe.markdown; sourceTree = "<group>"; };
 		422AD2F31B681BCE007E485C /* DocBrowserSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DocBrowserSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		422AD2F61B681BCE007E485C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		422AD2F81B681BCE007E485C /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -72,7 +73,8 @@
 		422AD3491B6830C6007E485C /* TMSMobileAppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = TMSMobileAppDelegate.swift; path = DocumentBrowser/TMSMobileAppDelegate.swift; sourceTree = "<group>"; };
 		422AD34B1B68438F007E485C /* DocumentBrowser.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = DocumentBrowser.storyboard; path = DocumentBrowser/DocumentBrowser.storyboard; sourceTree = "<group>"; };
 		422AD34D1B6A9AEA007E485C /* DocumentCollectionViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = DocumentCollectionViewCell.swift; path = DocumentBrowser/DocumentCollectionViewCell.swift; sourceTree = "<group>"; };
-		42D8EA111B741FF000FB347E /* Selection.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Selection.png; sourceTree = "<group>"; };
+		4274FB251B79AC60004E5908 /* DocBrowserSample.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = DocBrowserSample.entitlements; sourceTree = "<group>"; };
+		4274FB261B7B2069004E5908 /* Selection.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Selection.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -124,6 +126,7 @@
 		422AD2F51B681BCE007E485C /* DocBrowserSample */ = {
 			isa = PBXGroup;
 			children = (
+				4274FB251B79AC60004E5908 /* DocBrowserSample.entitlements */,
 				422AD3241B681E01007E485C /* Document.swift */,
 				422AD2F61B681BCE007E485C /* AppDelegate.swift */,
 				422AD2F81B681BCE007E485C /* ViewController.swift */,
@@ -167,7 +170,8 @@
 				422AD34D1B6A9AEA007E485C /* DocumentCollectionViewCell.swift */,
 				422AD33F1B683030007E485C /* ThumbnailCache.swift */,
 				422AD34B1B68438F007E485C /* DocumentBrowser.storyboard */,
-				42D8EA111B741FF000FB347E /* Selection.png */,
+				4274FB261B7B2069004E5908 /* Selection.png */,
+				42155B161B814D8B006A894D /* ReadMe.markdown */,
 			);
 			name = TMSDocumentBrowser;
 			sourceTree = "<group>";
@@ -239,6 +243,12 @@
 				TargetAttributes = {
 					422AD2F21B681BCE007E485C = {
 						CreatedOnToolsVersion = 7.0;
+						DevelopmentTeam = YEL2G7AHNU;
+						SystemCapabilities = {
+							com.apple.iCloud = {
+								enabled = 1;
+							};
+						};
 					};
 					422AD3061B681BCE007E485C = {
 						CreatedOnToolsVersion = 7.0;
@@ -277,7 +287,7 @@
 			files = (
 				422AD34C1B68438F007E485C /* DocumentBrowser.storyboard in Resources */,
 				422AD3011B681BCE007E485C /* LaunchScreen.storyboard in Resources */,
-				42D8EA121B741FF000FB347E /* Selection.png in Resources */,
+				4274FB271B7B2069004E5908 /* Selection.png in Resources */,
 				422AD2FE1B681BCE007E485C /* Assets.xcassets in Resources */,
 				422AD2FC1B681BCE007E485C /* Main.storyboard in Resources */,
 			);
@@ -458,10 +468,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = DocBrowserSample/DocBrowserSample.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = DocBrowserSample/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.theMikeSwan.DocBrowserSample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -469,10 +483,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = DocBrowserSample/DocBrowserSample.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = DocBrowserSample/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.theMikeSwan.DocBrowserSample;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};
@@ -503,6 +521,7 @@
 		422AD3221B681BCE007E485C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DocBrowserSample.entitlements;
 				INFOPLIST_FILE = DocBrowserSampleUITests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.theMikeSwan.DocBrowserSampleUITests;
@@ -515,6 +534,7 @@
 		422AD3231B681BCE007E485C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DocBrowserSample.entitlements;
 				INFOPLIST_FILE = DocBrowserSampleUITests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.theMikeSwan.DocBrowserSampleUITests;

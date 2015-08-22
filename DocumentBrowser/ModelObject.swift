@@ -16,6 +16,10 @@ protocol ModelObject: class {
     var lastAccessed: String { get }
     
     var URL: NSURL { get }
+    
+    func addObserver(observer: NSObject, forKeyPath keyPath: String, options: NSKeyValueObservingOptions, context: UnsafeMutablePointer<Void>)
+    
+    func removeObserver(observer: NSObject, forKeyPath: String)
 }
 
 /**

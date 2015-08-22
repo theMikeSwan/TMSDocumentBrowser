@@ -11,6 +11,7 @@
 
 import UIKit
 
+
 /**
     This class is used as an immutable value object to represent an item in our
     document browser. Note the custom implementation of `hash` and `isEqual(_:)`, 

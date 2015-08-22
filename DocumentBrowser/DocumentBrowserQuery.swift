@@ -17,6 +17,7 @@ import UIKit
 */
 protocol DocumentBrowserQueryDelegate: class {
     func documentBrowserQueryResultsDidChangeWithResults(results: [DocumentBrowserModelObject], animations: [DocumentBrowserAnimation])
+    func allowedFileExtensions() -> [String]
 }
 
 /**
@@ -112,8 +113,9 @@ class DocumentBrowserQuery: NSObject {
         let addedResults = buildModelObjectSet(addedMetadataItems ?? [])
         
         let newResults = buildQueryResultSet()
-
+        
         updateWithResults(newResults, removedResults: removedResults, addedResults: addedResults, changedResults: changedResults)
+        
     }
 
     @objc func finishGathering(notification: NSNotification) {
@@ -130,7 +132,20 @@ class DocumentBrowserQuery: NSObject {
 
     // MARK: - Result handling/animations
 
-    private func buildModelObjectSet(objects: [NSMetadataItem]) -> NSOrderedSet {
+    private func buildModelObjectSet(var objects: [NSMetadataItem]) -> NSOrderedSet {
+        if let allowedExtensions = delegate?.allowedFileExtensions() {
+            let revisedObjects = NSMutableArray()
+            for item in objects {
+                let itemURL = item.valueForAttribute(NSMetadataItemURLKey)!
+                if let itemExtension = itemURL.pathExtension {
+                    if allowedExtensions.contains(itemExtension) {
+                        revisedObjects.addObject(item)
+                    }
+                }
+            }
+            let transferedObjects = NSArray(array: revisedObjects)
+            objects = transferedObjects as! [NSMetadataItem]
+        }
         // Create an ordered set of model objects.
         var array = objects.map { DocumentBrowserModelObject(item: $0) }
 
@@ -217,13 +232,15 @@ class DocumentBrowserQuery: NSObject {
         let queryResults = results.array as! [DocumentBrowserModelObject]
 
         let queryAnimations: [DocumentBrowserAnimation]
-
-        if let oldResults = previousQueryObjects {
-            queryAnimations = computeAnimationsForNewResults(results, oldResults: oldResults, removedResults: removedResults, addedResults: addedResults, changedResults: changedResults)
-        }
-        else {
-            queryAnimations = [.Reload]
-        }
+        
+        // TODO: This is a work around to solve some display issues until the animations can be worked out to both update the name of the document in a cell and its location. Otherwise cells get renamed but don't move into correct position and cause the same file to be listed twice but only one instance will lead to the named document.
+//        if let oldResults = previousQueryObjects {
+//            queryAnimations = computeAnimationsForNewResults(results, oldResults: oldResults, removedResults: removedResults, addedResults: addedResults, changedResults: changedResults)
+//        }
+//        else {
+//            queryAnimations = [.Reload]
+//        }
+        queryAnimations = [.Reload]
 
         // After computing updates, we hang on to the current results for the next round.
         previousQueryObjects = results
@@ -233,3 +250,6 @@ class DocumentBrowserQuery: NSObject {
         }
     }
 }
+
+
+

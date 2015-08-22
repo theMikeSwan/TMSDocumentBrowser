@@ -27,7 +27,12 @@ class DocumentCollectionViewCell: UICollectionViewCell {
 	    }
 	}
 	var document:ModelObject! {
-	    didSet {
+        willSet {
+            if document != nil {
+                NSNotificationCenter.defaultCenter().removeObserver(self)
+            }
+        }
+        didSet {
 	        if document != nil {
 	            documentName.text = document.displayName
 	            documentLocation.text = document.subtitle
@@ -51,7 +56,10 @@ class DocumentCollectionViewCell: UICollectionViewCell {
         let longPressGesture = UILongPressGestureRecognizer(target: self, action: "handleLongPressGesture")
         self.addGestureRecognizer(longPressGesture)
     }
-
+    
+    func newName(note: NSNotification) {
+        documentName.text = document.displayName
+    }
 	
 	func handleLongPressGesture() {
         if !handlingGesture {
@@ -61,7 +69,11 @@ class DocumentCollectionViewCell: UICollectionViewCell {
             optionsSheet.addAction(renameAction())
             // TODO: add action for emailing document
             // TODO: add action for sharing by AirDrop
-            // TODO: add action for sharing iCloud link if document is in iCloud
+            let fileManager = NSFileManager.defaultManager()
+            if fileManager.isUbiquitousItemAtURL(document.URL) {
+                // TODO: add action for sharing iCloud link if document is in iCloud
+//                fileManager.URLForPublishingUbiquitousItemAtURL(document.URL, expirationDate: <#T##AutoreleasingUnsafeMutablePointer<NSDate?>#>)
+            }
             delegate?.presentActionSheet(optionsSheet, forCell: self)
         }
     }

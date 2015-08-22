@@ -67,11 +67,15 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
         return coordinationQueue
     }()
     
+    func usingiCloud() -> Bool {
+        return NSUserDefaults.standardUserDefaults().boolForKey(kUseiCloud) == true && NSFileManager.defaultManager().ubiquityIdentityToken != nil
+    }
+    
     // MARK: View Controller Override
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        if NSUserDefaults.standardUserDefaults().boolForKey(kUseiCloud) == true {
+        if usingiCloud() {
             browserQuery.startQuery()
             browserQuery.delegate = self
         } else {
@@ -85,10 +89,6 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
         recentsManager.delegate = self
     }
     
-    override func viewWillAppear(animated: Bool) {
-        super.viewWillAppear(animated)
-    }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         doneButton = UIBarButtonItem(barButtonSystemItem: .Done, target: self, action: "toggleEditing:")
@@ -99,6 +99,7 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
         setupConstraints()
     }
     
+    /// Just here to deal with some strange constraint issues
     func setupConstraints() {
         let viewDict = ["toolbar":toolbar, "collectionView":collectionView]
         let verticalString = "V:|-20-[toolbar]-0-[collectionView]-0-|"
@@ -116,7 +117,7 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
 
     override func viewDidAppear(animated: Bool) {
         super.viewDidAppear(animated)
-        if NSUserDefaults.standardUserDefaults().boolForKey(kUseiCloud) == true {
+        if usingiCloud() {
             browserQuery.resumeQuery()
         } else {
             configureForLocal()
@@ -125,14 +126,14 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
     
     override func viewWillDisappear(animated: Bool) {
         super.viewWillDisappear(animated)
-        if NSUserDefaults.standardUserDefaults().boolForKey(kUseiCloud) == true {
+        if usingiCloud() {
             browserQuery.pauseQuery()
         }
     }
     
     @IBAction func insertNewObject(sender: UIBarButtonItem) {
         var url = NSURL()
-        if NSUserDefaults.standardUserDefaults().boolForKey(kUseiCloud) == true {
+        if usingiCloud() {
             let appDelegate = UIApplication.sharedApplication().delegate as! TMSMobileAppDelegate
             url = NSFileManager.defaultManager().URLForUbiquityContainerIdentifier(appDelegate.iCloudContainerID())!
             url = url.URLByAppendingPathComponent("Documents", isDirectory: true)
@@ -140,15 +141,16 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
             var tempURL = NSURL.fileURLWithPath(NSTemporaryDirectory())
             tempURL = tempURL.URLByAppendingPathComponent(url.lastPathComponent!)
             delegate?.createDocumentAtURL(tempURL)
-            do {
-                try NSFileManager.defaultManager().setUbiquitous(true, itemAtURL: tempURL, destinationURL: url)
-            } catch {
-                NSLog("Error moving document to iCloud: \(error)")
-            }
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), { () -> Void in
+                do {
+                    try NSFileManager.defaultManager().setUbiquitous(true, itemAtURL: tempURL, destinationURL: url)
+                } catch {
+                    NSLog("Error moving document to iCloud: \(error)")
+                }
+            })
         } else {
             url = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask)[0] as NSURL
             url = freeDocumentURLInDirectory(url)
-//            url = url.URLByAppendingPathExtension(delegate.allowedFileExtensionsForDocumentBrowser(self)[0])
             delegate?.createDocumentAtURL(url)
             configureForLocal()
         }
@@ -178,12 +180,16 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
     func configureForLocal() {
         dispatch_async(dispatch_get_main_queue(), { () -> Void in
             let localDocuments = NSMutableArray()
+            let allowedExtensions = self.delegate.allowedFileExtensionsForDocumentBrowser(self)
             let path = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as NSString
             do {
                 let localResults = try NSFileManager.defaultManager().contentsOfDirectoryAtPath(path as String) as [String]
             for result in localResults {
                 let url = NSURL(fileURLWithPath: path.stringByAppendingPathComponent(result))
-                localDocuments.addObject(DocumentBrowserModelObject(url: url))
+                if allowedExtensions.contains(url.pathExtension!) {
+                    localDocuments.addObject(DocumentBrowserModelObject(url: url))
+                }
+                
             }
             self.documents = (localDocuments.copy() as! [DocumentBrowserModelObject])
             self.collectionView?.reloadData()
@@ -260,7 +266,7 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
     }
     
     // MARK: Animation Support
-
+// TODO: find the issue around this code and kill it! Deleting documents keeps causing issues with range exceptions on the old results.
     private func processAnimations<ModelType: ModelObject>(animations: [DocumentBrowserAnimation], oldResults: [ModelType], newResults: [ModelType], section: Int) -> [NSIndexPath] {
         let collectionView = self.collectionView!
         
@@ -269,32 +275,63 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
         for animation in animations {
             switch animation {
                 case .Add(let row):
-                    collectionView.insertItemsAtIndexPaths([
-                        NSIndexPath(forRow: row, inSection: section)
-                    ])
+                    if section == DocumentBrowserController.recentsSection {
+                        collectionView.insertItemsAtIndexPaths([ NSIndexPath(forRow: row, inSection: section) ])
+                    } else {
+                        collectionView.insertItemsAtIndexPaths([ NSIndexPath(forRow: (row + 1), inSection: section) ])
+                    }
                 
                 case .Delete(let row):
-                    collectionView.deleteItemsAtIndexPaths([
-                        NSIndexPath(forRow: row, inSection: section)
-                    ])
-                    
-                    let URL = oldResults[row].URL
-                    self.thumbnailCache.removeThumbnailForURL(URL)
+                    if section == DocumentBrowserController.recentsSection {
+                        collectionView.deleteItemsAtIndexPaths([
+                            NSIndexPath(forRow: row, inSection: section)
+                            ])
+                        
+                        let URL = oldResults[row].URL
+                        self.thumbnailCache.removeThumbnailForURL(URL)
+                    } else {
+                        collectionView.deleteItemsAtIndexPaths([
+                            NSIndexPath(forRow: (row + 1), inSection: section)
+                            ])
+                        
+                        let URL = oldResults[row].URL
+                        self.thumbnailCache.removeThumbnailForURL(URL)
+                    }
+                
                     
                 case .Move(let from, let to):
-                    let fromIndexPath = NSIndexPath(forRow: from, inSection: section)
-                    
-                    let toIndexPath = NSIndexPath(forRow: to, inSection: section)
-                    
-                    collectionView.moveItemAtIndexPath(fromIndexPath, toIndexPath: toIndexPath)
+                    if section == DocumentBrowserController.recentsSection {
+                        let fromIndexPath = NSIndexPath(forRow: from, inSection: section)
+                        
+                        let toIndexPath = NSIndexPath(forRow: to, inSection: section)
+                        
+                        collectionView.moveItemAtIndexPath(fromIndexPath, toIndexPath: toIndexPath)
+                    } else {
+                        let fromIndexPath = NSIndexPath(forRow: (from + 1), inSection: section)
+                        
+                        let toIndexPath = NSIndexPath(forRow: (to + 1), inSection: section)
+                        
+                        collectionView.moveItemAtIndexPath(fromIndexPath, toIndexPath: toIndexPath)
+                    }
+                
                 
                 case .Update(let row):
-                    indexPathsNeedingReload += [
-                        NSIndexPath(forRow: row, inSection: section)
-                    ]
+                    if section == DocumentBrowserController.recentsSection {
+                        indexPathsNeedingReload += [
+                            NSIndexPath(forRow: row, inSection: section)
+                        ]
+                        
+                        let URL = newResults[row].URL
+                        self.thumbnailCache.markThumbnailDirtyForURL(URL)
+                    } else {
+                        indexPathsNeedingReload += [
+                            NSIndexPath(forRow: (row + 1),  inSection: section)
+                        ]
+                        
+                        let URL = newResults[row].URL
+                        self.thumbnailCache.markThumbnailDirtyForURL(URL)
+                    }
                     
-                    let URL = newResults[row].URL
-                    self.thumbnailCache.markThumbnailDirtyForURL(URL)
                     
                 case .Reload:
                     fatalError("Unreachable")
@@ -368,7 +405,11 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
     
      func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
         if collectionView.allowsMultipleSelection == true {
-            deleteButton.enabled = true
+            if indexPath == NSIndexPath(forItem: 0, inSection: DocumentBrowserController.documentsSection) {
+                collectionView.deselectItemAtIndexPath(indexPath, animated: false)
+            } else {
+                deleteButton.enabled = true
+            }
         } else {
             if indexPath.section == DocumentBrowserController.documentsSection && indexPath.row == 0 {
                 insertNewObject(UIBarButtonItem())
@@ -440,7 +481,6 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
     
     // MARK: Document handling support
     
-    // TODO: refactor this for local documents versus iCloud documents??
     private func documentBrowserModelObjectForURL(url: NSURL) -> DocumentBrowserModelObject? {
         guard let matchingDocumentIndex = documents.indexOf({ $0.URL == url }) else { return nil }
         
@@ -461,12 +501,13 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
     // MARK: - Document Opening
     /// The delegate should call back to this function upon successfully opening the chosen document to add it to the recents list
     func documentWasOpenedSuccessfullyAtURL(URL: NSURL) {
+        NSUserDefaults.standardUserDefaults().setObject(URL, forKey: kCurrentDocument)
         recentsManager.addURLToRecents(URL)
     }
     
     /// The delegate should call back to this function when the document has been created
     func documentCreationComplete() {
-        if NSUserDefaults.standardUserDefaults().boolForKey(kUseiCloud) == false {
+        if !usingiCloud() {
             dispatch_async(dispatch_get_main_queue(), { () -> Void in
                 self.configureForLocal()
             })
@@ -474,13 +515,6 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
     }
     
     // MARK: - Navigation
-    
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        if segue.identifier == "closeDocBrowser" {
-            delegate?.documentBrowserDidCancel?(self)
-        }
-    }
     
     @IBAction func closeBrowser(sender: UIBarButtonItem) {
         delegate?.documentBrowserDidCancel?(self)
@@ -556,15 +590,18 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
                         removedARecentDoc = true
                     }
                 }
+                
                 self.documents = (tempDocs as AnyObject as! [DocumentBrowserModelObject])
                 dispatch_async(dispatch_get_main_queue(), { () -> Void in
-                    for i in indexesToRemove {
-                        selectedPaths.removeAtIndex(i as! Int)
-                    }
-                    self.collectionView!.deleteItemsAtIndexPaths(selectedPaths)
-                    // If we removed a recent document we need to reload the collection view to catch the change
-                    if removedARecentDoc {
-                        self.configureForLocal()
+                    if !self.usingiCloud(){
+                        for i in indexesToRemove {
+                            selectedPaths.removeAtIndex(i as! Int)
+                        }
+                        self.collectionView!.deleteItemsAtIndexPaths(selectedPaths)
+                        // If we removed a recent document we need to reload the collection view to catch the change
+                        if removedARecentDoc {
+                            self.configureForLocal()
+                        }
                     }
                     self.toggleEditing(NSObject())
                 })
@@ -592,10 +629,13 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
     }
     
     func documentMovedFromPath(origin: String, toPath dest: String) {
-        if !NSUserDefaults.standardUserDefaults().boolForKey(kUseiCloud) == true {
+        if !usingiCloud() {
             configureForLocal()
         }
         delegate?.documentBrowser?(self, didRenameDocumentAtURL: NSURL(string: origin)!, to: (dest as NSString).lastPathComponent)
     }
     
+    func allowedFileExtensions() -> [String] {
+        return delegate.allowedFileExtensionsForDocumentBrowser(self)
+    }
 }

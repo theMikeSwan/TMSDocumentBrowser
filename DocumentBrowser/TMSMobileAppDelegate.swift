@@ -27,6 +27,16 @@ func ZAssert(test: Bool, message: String) {
     exception.raise()
 }
 
+/// delay function from Matt on stackoverflow (http://stackoverflow.com/users/341994/matt). Used here to delay the posting of the alert view asking the user if they want to use iCloud.
+func delay(delay:Double, closure:()->()) {
+    dispatch_after(
+        dispatch_time(
+            DISPATCH_TIME_NOW,
+            Int64(delay * Double(NSEC_PER_SEC))
+        ),
+        dispatch_get_main_queue(), closure)
+}
+
 /// User default to track wether we have asked the user if they want to use iCloud yet.
 let kAskedAboutiCloud = "com.theMikeSwan.AskedAboutiCloud"
 /// The most recently seen iCloud token. Can be nil.
@@ -48,48 +58,60 @@ class TMSMobileAppDelegate: UIResponder, UIApplicationDelegate {
     
     /// Subclasses must call super at some point in overrides of this function!
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
-        // Setting the deafults this way rather than registering them in the normal fashion to prevent conflicts with app specific defaults that will likely get registered in a moment.
         let userDefaults = NSUserDefaults.standardUserDefaults()
-        if !userDefaults.boolForKey(kAskedAboutiCloud) {
+        if userDefaults.objectForKey(kAskedAboutiCloud) == nil{
             userDefaults.setBool(false, forKey: kAskedAboutiCloud)
         }
-        if !userDefaults.boolForKey(kUseiCloud) {
+        if userDefaults.objectForKey(kUseiCloud) == nil {
             userDefaults.setBool(false, forKey: kUseiCloud)
         }
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: Selector("storeDidChange:"), name: NSUbiquitousKeyValueStoreDidChangeExternallyNotification, object: NSUbiquitousKeyValueStore.defaultStore())
+        NSUbiquitousKeyValueStore.defaultStore().synchronize()
         
-        if let currentiCloudToken = NSFileManager.defaultManager().ubiquityIdentityToken {
+        if NSFileManager.defaultManager().ubiquityIdentityToken != nil {
             if userDefaults.boolForKey(kAskedAboutiCloud) == false {
-                determineiCloudPreference()
-            }
-            if userDefaults.boolForKey(kUseiCloud) == true {
-                dispatch_async(dispatch_get_global_queue(
-                    DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), { () -> Void in
-                        // We don't care about the result at this point, we just want to make sure the system has the container set up. If we just call URLForUbiquityContainerIdentifier() without assigning it to anything the Swift coplier will yell at us.
-                        let result = NSFileManager.defaultManager().URLForUbiquityContainerIdentifier(self.iCloudContainerID())
-                        dispatch_async(dispatch_get_main_queue(), { () -> Void in
-                            self.containerConfigComplete(result)
-                        })
+                delay(0.1, closure:{
+                    self.determineiCloudPreference()
+                    userDefaults.setBool(true, forKey: kAskedAboutiCloud)
                 })
-                if let storedTokenData = userDefaults.objectForKey(kiCloudToken) as? NSData {
-                    let storedToken = NSKeyedUnarchiver.unarchiveObjectWithData(storedTokenData) as! protocol<NSCoding, NSCopying, NSObjectProtocol>
-                    if !currentiCloudToken.isEqual(storedToken) {
-                        storeToken(currentiCloudToken)
-                        containerMismatch()
-                    }
-                }
+            } else {
+                configureiCloud()
             }
-            NSNotificationCenter.defaultCenter().addObserver(self, selector: "containerChanged:", name: NSUbiquityIdentityDidChangeNotification, object: nil)
         }
         
         if let currentURL = userDefaults.valueForKey(kCurrentDocument) as? NSURL {
             if NSFileManager.defaultManager().isReadableFileAtPath(currentURL.path!) {
-                // TODO: pass the document off to be opened
+                restoreDocument(currentURL)
             }
         } else {
-            // TODO: open the document browser
+            openDocBrowser()
+            
         }
 
         return true
+    }
+    
+    func configureiCloud() {
+        let userDefaults = NSUserDefaults.standardUserDefaults()
+        if userDefaults.boolForKey(kUseiCloud) == true {
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), { () -> Void in
+                let result = NSFileManager.defaultManager().URLForUbiquityContainerIdentifier(self.iCloudContainerID())
+                dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                    self.containerConfigComplete(result)
+                })
+            })
+            let currentiCloudToken = NSFileManager.defaultManager().ubiquityIdentityToken!
+            if let storedTokenData = userDefaults.objectForKey(kiCloudToken) as? NSData {
+                let storedToken = NSKeyedUnarchiver.unarchiveObjectWithData(storedTokenData) as! protocol<NSCoding, NSCopying, NSObjectProtocol>
+                if !currentiCloudToken.isEqual(storedToken) {
+                    self.containerMismatch()
+                    self.storeToken(currentiCloudToken)
+                }
+            } else {
+                self.storeToken(currentiCloudToken)
+            }
+        }
+        NSNotificationCenter.defaultCenter().addObserver(self, selector: "containerChanged:", name: NSUbiquityIdentityDidChangeNotification, object: nil)
     }
     
     /// Asks the user if they want to use iCloud or not and stores the answer in a user default.
@@ -102,6 +124,7 @@ class TMSMobileAppDelegate: UIResponder, UIApplicationDelegate {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .Alert)
         alert.addAction(UIAlertAction(title: defaultTitle, style: .Default, handler: { (action) -> Void in
             NSUserDefaults.standardUserDefaults().setBool(true, forKey: kUseiCloud)
+            self.configureiCloud()
         }))
         alert.addAction(UIAlertAction(title: alternateTitle, style: .Default, handler: { (action) -> Void in
             NSUserDefaults.standardUserDefaults().setBool(false, forKey: kUseiCloud)
@@ -125,7 +148,7 @@ class TMSMobileAppDelegate: UIResponder, UIApplicationDelegate {
     /// Called when NSFilemanager returns from URLForUbiquityContainer(). Default implementation does nothing but subclasses can use it if needed.
     /// There is no need to call super in overrides as the default implementation of this function is a stub.
     func containerConfigComplete(result: NSURL?) {
-        
+//        print("containerConfigComplete: \(result)")
     }
     
     /// Stores the passed in iCloud token to the user defaults.
@@ -157,6 +180,18 @@ class TMSMobileAppDelegate: UIResponder, UIApplicationDelegate {
     /// There is no need to call super when overriding this function.
     func iCloudContainerID() -> String? {
         return nil
+    }
+    
+    /// Called when there is a value for the currently open document. Subclasses should override to facilicate re-opening the document
+    func restoreDocument(URL: NSURL) {
+        print("Subclasses of TMSMobileAppDelegate should override restoreDocument(URL:) so that the document, \(URL.lastPathComponent), can be restored!")
+    }
+    
+    /// Called when there is no value for the current document at app launch, default implementation opens the document browser. Override to prevent opening of document browser at launch. The default implementation expects the root view to have a segure called "showDocumentBrowser" that shows the document browser.
+    func openDocBrowser() {
+        delay(0.1) { () -> () in
+            self.window!.rootViewController?.performSegueWithIdentifier("showDocumentBrowser", sender: nil)
+        }
     }
    
 }

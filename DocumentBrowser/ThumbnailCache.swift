@@ -234,7 +234,6 @@ class ThumbnailCache {
             is tracked properly accross renames.
         */
         guard let documentIdentifier = documentIdentifierForURL(URL) else {
-//            print("Failed to load docID and will display placeholder image for \(URL)")
             
             return loadIconForURL(URL)
         }

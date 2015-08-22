@@ -14,7 +14,6 @@ class AppDelegate: TMSMobileAppDelegate {
 
 //    var window: UIWindow?
 
-// NOTE: Add override to the start of this function
     override func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
         // Override point for customization after application launch.
         // NOTE: Add a call to super at some point during this function. It's done before other setup here but could be after if needed (the earlier the iCloud container starts getting setup the better which is why the normal order would be super then subclass).
@@ -53,9 +52,8 @@ class AppDelegate: TMSMobileAppDelegate {
     
     // MARK: - TMSMobileAppDelegate overrides
     override func iCloudContainerID() -> String? {
-        // NOTE: return the specific container ID
-        // TODO: return the correct ID
-        return nil
+        // NOTE: return the specific container ID if needed
+        return "iCloud.com.theMikeSwan.DocBrowserSample"
     }
 
 }

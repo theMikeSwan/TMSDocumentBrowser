@@ -32,7 +32,7 @@ class RecentModelObject: NSObject, NSFilePresenter, ModelObject {
     
     private(set) var URL: NSURL
     
-    private(set) var displayName = ""
+    private(set) var displayName = "" 
     
     private(set) var subtitle = ""
     
@@ -106,7 +106,6 @@ class RecentModelObject: NSObject, NSFilePresenter, ModelObject {
             if bookmarkDataIsStale {
                 self.bookmarkDataNeedsSave = true
                 
-//                print("\(URL) is stale.")
             }
             
             super.init()
