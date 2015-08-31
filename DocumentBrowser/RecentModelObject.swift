@@ -89,7 +89,7 @@ class RecentModelObject: NSObject, NSFilePresenter, ModelObject {
             // Decode the bookmark into a URL.
             var bookmarkDataIsStale: ObjCBool = false
 
-            guard let bookmark = aDecoder.decodeObjectOfClass(NSData.self, forKey: RecentModelObject.bookmarkKey) as? NSData else {
+            guard let bookmark = aDecoder.decodeObjectOfClass(NSData.self, forKey: RecentModelObject.bookmarkKey) else {
                 throw DocumentBrowserError.BookmarkResolveFailed
             }
             
