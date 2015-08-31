@@ -7,7 +7,7 @@ On OS X document based apps get `NSSavePanel` and `NSOpenPanel` to handle pickin
 
 
 ##Using TMSDocumentBrowser##
-Start by adding all of the files in the `TMSDocumentBrowser` folder to your project. once the files are all added change the superclass of your project's `AppDelegate` to `TMSMobileAppDelegate`. Within your subclass's version of `application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool` add a call to `super`, preferably at the beginning. This will get things moving for you. That is the only function that has to be implemented in the app delegate to get the default functionality. There are several fucntions that can be overridden to customize behavior.
+Start by adding all of the files in the `TMSDocumentBrowser` folder to your project. once the files are all added change the superclass of your project's `AppDelegate` to `TMSMobileAppDelegate`. Within your subclass's version of `application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool` add a call to `super`, preferably at the beginning. This will get things moving for you. That is the only function that has to be implemented in the app delegate to get the default functionality. There are several functions that can be overridden to customize behavior.
 Once the app delegate is taken care of there are a few delegate functions in the `DocumentBrowserDelegate` protocol that need to be implemented:
 
 * `documentBrowser(documentBrowser: DocumentBrowserController, didPickURL url: NSURL)` is called whenever the user selects a document in the browser. Most often the user will be expecting the document to be opened at that point and the document browser to disappear, there may be times when alternate behavior is desired.
@@ -17,12 +17,12 @@ Once the app delegate is taken care of there are a few delegate functions in the
 There are other optional delegate functions that can be implemented as well. for more information see the customizations sections below.
 the last step is to add storyboard references in the correct locations within your main storyboards to link to the browser as desired.
 
-Check out the included sample app for help in incorperating `TMSDocumentBrowser` into your own app. If you search for "// Note:" you will find places where I have added comments next to an example of the code needed for various tasks.
+Check out the included sample app for help in incorporating `TMSDocumentBrowser` into your own app. If you search for "// Note:" you will find places where I have added comments next to an example of the code needed for various tasks.
 
 ##What `TMSDocumentBrowser` Does##
 When your app launches it will look for an iCloud token, if one is found it will then check to see if it has already asked the user if they want to use iCloud or not. If the user hasn't been asked if they want to use iCloud yet an alert will be displayed presenting the user with an option to either use iCloud or not, this answer will be stored as a user default as will the fact that the user has been asked about iCloud yet. If you want to add a user default to your app allowing the user to turn iCloud on and off the bool for wether to use iCloud or not is stored in the constant `kUseiCloud`. There is also a user default for the currently opened document, this is used to help return the user to the last place they were at. 
 The document browser itself is a collection view with two sections; the first section is for recently opened documents and the second is for all documents. The first cell in the second section is for adding new documents, following the idea used in Pages and Numbers. The document cells all have a long press gesture attached to them that brings up an action sheet. This sheet will be at the bottom of the screen for iPhones and in a popover for iPads. Currently the only option that exists is to rename the document but other options will be added later.
-The toolbar at the top of the browser has a cancel button for closing the browser without selectiong a document as well as an edit button. Tapping on the edit button will allow the user to select multiple documents and delete them using the delete button that appears during editing on the left side of the toolbar. Before the documents are actually deleted the user will be asked to confirm.
+The toolbar at the top of the browser has a cancel button for closing the browser without selecting a document as well as an edit button. Tapping on the edit button will allow the user to select multiple documents and delete them using the delete button that appears during editing on the left side of the toolbar. Before the documents are actually deleted the user will be asked to confirm.
 All user facing strings have been wrapped in localized strings but at this time English is the only language in place (feel free to add translations).
 
 ##Customizations##
@@ -36,7 +36,7 @@ All user facing strings have been wrapped in localized strings but at this time 
 
 
 ####Additional Functions in `DocumentBrowserDelegate` for Added Functionality:####
-* `documentBrowserDidCancel(documentBrowser: DocumentBrowserController)` will be called when the user cancels, aqnd closes, the document browser.
+* `documentBrowserDidCancel(documentBrowser: DocumentBrowserController)` will be called when the user cancels, and closes, the document browser.
 * `documentBrowser(documentBrowser: DocumentBrowserController, willDeleteDocumentAtURL urlToDelete: NSURL)` informs the delegate when a document is about to be deleted, if the selected document is currently open this is the time to close it and remove any references to it.
 * `documentBrowser(documentBrowser: DocumentBrowserController, didRenameDocumentAtURL url: NSURL, to: String)` informs the delegate of name changes to documents. A change in name results in a change of path as well, as such references to the location of the document should get updated and if the document name is being displayed in the UI it should be updated.
 
