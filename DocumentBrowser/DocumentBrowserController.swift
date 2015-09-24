@@ -501,7 +501,7 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
     // MARK: - Document Opening
     /// The delegate should call back to this function upon successfully opening the chosen document to add it to the recents list
     func documentWasOpenedSuccessfullyAtURL(URL: NSURL) {
-        NSUserDefaults.standardUserDefaults().setObject(URL, forKey: kCurrentDocument)
+        NSUserDefaults.standardUserDefaults().setObject(URL.absoluteString, forKey: kCurrentDocument)
         recentsManager.addURLToRecents(URL)
     }
     

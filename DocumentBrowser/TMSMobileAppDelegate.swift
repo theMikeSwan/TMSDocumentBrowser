@@ -79,9 +79,10 @@ class TMSMobileAppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
         
-        if let currentURL = userDefaults.valueForKey(kCurrentDocument) as? NSURL {
-            if NSFileManager.defaultManager().isReadableFileAtPath(currentURL.path!) {
-                restoreDocument(currentURL)
+        if let currentDoc = userDefaults.valueForKey(kCurrentDocument) as? String {
+            if NSFileManager.defaultManager().isReadableFileAtPath(currentDoc) {
+                let currentURL = NSURL(string: currentDoc)
+                restoreDocument(currentURL!)
             }
         } else {
             openDocBrowser()
