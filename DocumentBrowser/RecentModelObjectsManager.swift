@@ -106,7 +106,7 @@ class RecentModelObjectsManager: RecentModelObjectDelegate {
             
             NSOperationQueue.mainQueue().addOperationWithBlock {
                 // Notify our delegate that the initial recents were loaded.
-                delegate?.recentsManagerResultsDidChange(recentModelObjects, animations: [.Reload])
+                self.delegate?.recentsManagerResultsDidChange(self.recentModelObjects, animations: [.Reload])
             }
         }
     }

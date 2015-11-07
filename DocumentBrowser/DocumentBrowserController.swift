@@ -562,12 +562,13 @@ class DocumentBrowserController: UIViewController, UICollectionViewDataSource, U
                 // Make a copy of the documents to prevent shifting index issues
                 var removedARecentDoc = false
                 let tempDocs = NSMutableArray(array: self.documents)
+                let tempRecents = NSMutableArray(array: self.recents)
                 let indexesToRemove = [] as NSMutableArray
                 for indexPath in selectedPaths {
                     let fileCoordinator = NSFileCoordinator(filePresenter: nil)
                     var objectToDelete: ModelObject
                     if indexPath.section == DocumentBrowserController.recentsSection {
-                        objectToDelete = self.recents[indexPath.row] as ModelObject
+                        objectToDelete = tempRecents[indexPath.row] as! ModelObject
                     } else {
                         objectToDelete = self.documents[indexPath.row - 1] as ModelObject
                     }

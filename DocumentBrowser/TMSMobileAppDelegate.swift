@@ -76,20 +76,22 @@ class TMSMobileAppDelegate: UIResponder, UIApplicationDelegate {
                 })
             } else {
                 configureiCloud()
+                continueLaunch()
             }
+        } else {
+            continueLaunch()
         }
-        
-        if let currentDoc = userDefaults.valueForKey(kCurrentDocument) as? String {
-            if NSFileManager.defaultManager().isReadableFileAtPath(currentDoc) {
-                let currentURL = NSURL(string: currentDoc)
-                restoreDocument(currentURL!)
+        return true
+    }
+    
+    func continueLaunch() {
+        if let currentURL = NSUserDefaults.standardUserDefaults().valueForKey(kCurrentDocument) as? NSURL {
+            if NSFileManager.defaultManager().isReadableFileAtPath(currentURL.path!) {
+                restoreDocument(currentURL)
             }
         } else {
             openDocBrowser()
-            
         }
-
-        return true
     }
     
     func configureiCloud() {
@@ -125,10 +127,12 @@ class TMSMobileAppDelegate: UIResponder, UIApplicationDelegate {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .Alert)
         alert.addAction(UIAlertAction(title: defaultTitle, style: .Default, handler: { (action) -> Void in
             NSUserDefaults.standardUserDefaults().setBool(true, forKey: kUseiCloud)
+            self.continueLaunch()
             self.configureiCloud()
         }))
         alert.addAction(UIAlertAction(title: alternateTitle, style: .Default, handler: { (action) -> Void in
             NSUserDefaults.standardUserDefaults().setBool(false, forKey: kUseiCloud)
+            self.continueLaunch()
         }))
         self.window!.rootViewController?.presentViewController(alert, animated: true, completion: { })
     }
@@ -188,7 +192,7 @@ class TMSMobileAppDelegate: UIResponder, UIApplicationDelegate {
         print("Subclasses of TMSMobileAppDelegate should override restoreDocument(URL:) so that the document, \(URL.lastPathComponent), can be restored!")
     }
     
-    /// Called when there is no value for the current document at app launch, default implementation opens the document browser. Override to prevent opening of document browser at launch. The default implementation expects the root view to have a segure called "showDocumentBrowser" that shows the document browser.
+    /// Called when there is no value for the current document at app launch, default implementation opens the document browser. Override to prevent opening of document browser at launch. The default implementation expects the root view to have a segure called "showDocumentBrowser" that shows the document browser. If the root view controller is something such as a tab view or navigation controller you will need to override this 
     func openDocBrowser() {
         delay(0.1) { () -> () in
             self.window!.rootViewController?.performSegueWithIdentifier("showDocumentBrowser", sender: nil)
